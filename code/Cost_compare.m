@@ -1,8 +1,8 @@
 function [system_cost1_av,system_cost2_av,storage_profit1_av,storage_profit2_av,consumer_payment1_av,consumer_payment2_av]=Cost_compare(sigma,c)
 %% parameter
 a=0.3; % wind ratio
-b=0.2;% confidence level
-%c=2; %sigma, original forecast error is too small
+b=0.05;% confidence level
+%c=1; %sigma, original forecast error is too small
 d=10; %day number
 e=0.2; %storage capacity ratio (load capacity)
 f=4; %storage duration
