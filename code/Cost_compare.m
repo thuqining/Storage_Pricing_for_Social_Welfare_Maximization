@@ -10,7 +10,7 @@ g=1; %initial SoC
 h=10; %storage marginal cost
 
 %sigma=40; % price sigma
-scenarios=90; %scenarios number for MCS
+scenarios=100; %scenarios number for MCS
 
 %% DA price generation
 [energy_price]=DA_price(a,b,c,d,e,f,g,h);
