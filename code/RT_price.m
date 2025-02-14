@@ -93,16 +93,12 @@ delta_E=1./num_seg;
 system_cost1 = zeros(b, 1);
 storage_profit1= zeros(b, 1);
 consumer_payment1=zeros(b, 1);
-storage_charge1=zeros(b, 1);
-storage_discharge1=zeros(b, 1);
-generator_power1=zeros(b, 1);
+
 
 system_cost2 = zeros(b, 1);
 storage_profit2= zeros(b, 1);
 consumer_payment2=zeros(b, 1);
-storage_charge2=zeros(b, 1);
-storage_discharge2=zeros(b, 1);
-generator_power2=zeros(b, 1);
+
 
 % system_cost3 = zeros(b, 1);
 % storage_profit3= zeros(b, 1);
@@ -116,14 +112,19 @@ parfor s = 1:b
     Dseg=binvar(num_seg-1, T); % storage segment
     SOC = sdpvar(num_seg, T); % storage SOC
     Pg = sdpvar(num_g, T); % generator power
+    rg=sdpvar(num_g, T); % generator power
+    lu=sdpvar(1, T); % generator power
+    ld=sdpvar(1, T); % generator power
 
 
     %% constraints
     cons = [];
     % power balance-energy price dual
     for j = 1:T    
-        cons = [cons, sum(Pg(:, j), 1) + sum(Pdis(:, j), 1) - sum(Pch(:, j), 1) == load_scenario(s, j)];
+        cons = [cons, sum(Pg(:, j), 1) + sum(Pdis(:, j), 1) - sum(Pch(:, j), 1)+ld(:,j) == load_scenario(s, j)+lu(:,j)];
     end
+    cons = [cons,lu>=0];
+    cons = [cons,ld>=0];
 
    % storage SoC bounds
     for i = 1:num_seg
@@ -177,10 +178,20 @@ parfor s = 1:b
 
 
     % generator power bounds
-    for j = 1:T    
-        cons = [cons, G_min <= Pg(:, j)];
-        cons = [cons, Pg(:, j) <= G_max];
-    end
+for j=1:T    
+cons=[cons,G_min<=Pg(:,j)<=G_max-rg(:,j)];
+end
+
+
+% generator reserve
+for j=1:T    
+cons=[cons,0<=rg(:,j)];
+end
+
+
+for j=1:T    
+cons=[cons,sum(rg(:,j),1)>=0.1*load_c(:,j)];
+end
 
 
 
@@ -204,6 +215,11 @@ parfor s = 1:b
         obj = obj + sum(bd1(:,j).*Pdis(:,j)-bc1(:,j).*Pch(:,j),1);
     end
 
+    for j=1:T
+        obj = obj + 2000*ld(:,j);
+    end
+
+
     % optimization
     options = sdpsettings('verbose', 1, 'solver', 'gurobi');
     results = optimize(cons, obj, options);
@@ -215,8 +231,10 @@ parfor s = 1:b
     cons = [];
     % power balance-energy price dual
     for j = 1:T    
-        cons = [cons, sum(Pg(:, j), 1) + sum(Pdis(:, j), 1) - sum(Pch(:, j), 1) == load_scenario(s, j)];
+        cons = [cons, sum(Pg(:, j), 1) + sum(Pdis(:, j), 1) - sum(Pch(:, j), 1)+ld(:,j) == load_scenario(s, j)+lu(:,j)];
     end
+    cons = [cons,lu>=0];
+    cons = [cons,ld>=0];
 
 
     for i = 1:num_seg
@@ -269,10 +287,21 @@ parfor s = 1:b
 
 
     % generator power bounds
-    for j = 1:T    
-        cons = [cons, G_min <= Pg(:, j)];
-        cons = [cons, Pg(:, j)<= G_max];
-    end
+for j=1:T    
+cons=[cons,G_min<=Pg(:,j)<=G_max-rg(:,j)];
+end
+
+
+% generator reserve
+for j=1:T    
+cons=[cons,0<=rg(:,j)];
+end
+
+
+for j=1:T    
+cons=[cons,sum(rg(:,j),1)>=0.1*load_c(:,j)];
+end
+
 
 
 
@@ -296,6 +325,11 @@ parfor s = 1:b
     for j = 1:T
         obj = obj + sum(bd1(:,j).*Pdis(:,j)-bc1(:,j).*Pch(:,j),1);
     end
+
+    for j=1:T
+        obj = obj + 2000*ld(:,j);
+    end
+
 
     % optimization
     options = sdpsettings('verbose', 1, 'solver', 'gurobi');
@@ -321,17 +355,12 @@ parfor s = 1:b
 
     temp_cost2 = sum(energy_price'.*sum((value(Pdis-Pch)),1)-MS*(value(sum(Pdis,1))));
     temp_cost3=sum(energy_price'.*load_scenario(s,:));
-    temp_cost4=sum(sum(value(Pdis)));
-    temp_cost5=sum(sum(value(Pch)));
-    temp_cost6=sum(sum(value(Pg)));
+
 
        
     system_cost1(s, 1) = temp_cost1;
     storage_profit1(s, 1) = temp_cost2;
     consumer_payment1(s, 1)=temp_cost3;
-    storage_discharge1(s,1)=temp_cost4;
-    storage_charge1(s,1)=temp_cost5;
-    generator_power1(s,1)=temp_cost6;
 
 
 end
@@ -346,15 +375,19 @@ parfor s = 1:b
     Dseg=binvar(num_seg-1, T); % storage segment
     SOC = sdpvar(num_seg, T); % storage SOC
     Pg = sdpvar(num_g, T); % generator power
+    rg=sdpvar(num_g, T); % generator power
+    lu=sdpvar(1, T); % generator power
+    ld=sdpvar(1, T); % generator power
 
 
     %% constraints
     cons = [];
     % power balance-energy price dual
     for j = 1:T    
-        cons = [cons, sum(Pg(:, j), 1) + sum(Pdis(:, j), 1) - sum(Pch(:, j), 1) == load_scenario(s, j)];
+        cons = [cons, sum(Pg(:, j), 1) + sum(Pdis(:, j), 1) - sum(Pch(:, j), 1)+ld(:,j) == load_scenario(s, j)+lu(:,j)];
     end
-
+    cons = [cons,lu>=0];
+    cons = [cons,ld>=0];
 
    % storage SoC bounds
     for i = 1:num_seg
@@ -407,10 +440,23 @@ parfor s = 1:b
 
 
     % generator power bounds
-    for j = 1:T    
-        cons = [cons, G_min <= Pg(:, j)];
-        cons = [cons, Pg(:, j) <= G_max];
-    end
+
+for j=1:T    
+cons=[cons,G_min<=Pg(:,j)<=G_max-rg(:,j)];
+end
+
+
+% generator reserve
+for j=1:T    
+cons=[cons,0<=rg(:,j)];
+end
+
+
+for j=1:T    
+cons=[cons,sum(rg(:,j),1)>=0.1*load_c(:,j)];
+end
+
+
 
 
     % generator RAMPUP and RAMPDOWN
@@ -432,6 +478,11 @@ parfor s = 1:b
         obj = obj + sum(bd2(:,j).*Pdis(:,j)-bc2(:,j).*Pch(:,j),1);
     end
 
+    for j=1:T
+        obj = obj + 2000*ld(:,j);
+    end
+
+
     % optimization
     options = sdpsettings('verbose', 1, 'solver', 'gurobi');
     results = optimize(cons, obj, options);
@@ -443,8 +494,10 @@ parfor s = 1:b
     cons = [];
     % power balance-energy price dual
     for j = 1:T    
-        cons = [cons, sum(Pg(:, j), 1) + sum(Pdis(:, j), 1) - sum(Pch(:, j), 1)== load_scenario(s, j)];
+        cons = [cons, sum(Pg(:, j), 1) + sum(Pdis(:, j), 1) - sum(Pch(:, j), 1)+ld(:,j) == load_scenario(s, j)+lu(:,j)];
     end
+    cons = [cons,lu>=0];
+    cons = [cons,ld>=0];
 
 
 
@@ -499,10 +552,20 @@ parfor s = 1:b
 
 
 
-    for j = 1:T    
-        cons = [cons, G_min <= Pg(:, j)];
-        cons = [cons, Pg(:, j)<= G_max];
-    end
+for j=1:T    
+cons=[cons,G_min<=Pg(:,j)<=G_max-rg(:,j)];
+end
+
+
+% generator reserve
+for j=1:T    
+cons=[cons,0<=rg(:,j)];
+end
+
+
+for j=1:T    
+cons=[cons,sum(rg(:,j),1)>=0.1*load_c(:,j)];
+end
 
 
     % generator RAMPUP and RAMPDOWN
@@ -524,6 +587,10 @@ parfor s = 1:b
     % storage bids
     for j = 1:T
         obj = obj + sum(bd2(:,j).*Pdis(:,j)-bc2(:,j).*Pch(:,j),1);
+    end
+
+    for j=1:T
+        obj = obj + 2000*ld(:,j);
     end
 
     % optimization
@@ -549,18 +616,12 @@ parfor s = 1:b
     temp_cost2 = sum(energy_price'.*sum((value(Pdis-Pch)),1)-MS*(value(sum(Pdis,1))));
 
     temp_cost3=sum(energy_price'.*load_scenario(s,:));
-    temp_cost4=sum(sum(value(Pdis)));
-    temp_cost5=sum(sum(value(Pch)));
-    temp_cost6=sum(sum(value(Pg)));
 
 
        
     system_cost2(s, 1) = temp_cost1;
     storage_profit2(s, 1) = temp_cost2;
     consumer_payment2(s, 1)=temp_cost3;
-    storage_discharge2(s,1)=temp_cost4;
-    storage_charge2(s,1)=temp_cost5;
-    generator_power2(s,1)=temp_cost6;
 
 end
 
