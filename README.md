@@ -1,6 +1,5 @@
-# Storage_Pricing_Social_Welfare_Maximization
-This contains code and data used for the paper: "Chance-Constrained Energy Storage Pricing for Social Welfare Maximization"
-This paper has been submitted to IEEE Transactions on Energy Markets, Policy and Regulation.
+# Locational energy storage bid bounds
+This contains code and data used for the paper: Qi N, Xu B. Locational energy storage bid bounds for facilitating social welfare convergence. IEEE Transactions on Energy Markets, Policy and Regulation. 2025 Jun 12.
 
 Briefly, the codes are composed of both storage economic withholding bidding, locational storage bid bounds, and real-time market clearing
 
